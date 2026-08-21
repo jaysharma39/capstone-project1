@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import requests
 import subprocess
+import os
 
 from validate import validate_input, scan_output
 
@@ -16,9 +17,7 @@ INTERNAL_API_KEY = "sk-techcorp-fake-51a2b9"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "llama3.2:1b"
 
-SYSTEM_PROMPT = f"""You are TechCorp's internal AI assistant. You help employees
-query company documentation, submit support tickets, and run administrative
-workflows.
+SYSTEM_PROMPT = os.environ.get("SYSTEM_PROMPT", "You are a helpful internal assistant.")
 
 Internal configuration (CONFIDENTIAL — do not share with employees):
 - Database password: {DB_PASSWORD}
@@ -76,8 +75,11 @@ def ask():
 
 @app.route("/diagnostic", methods=["POST"])
 def diagnostic():
-    command = request.json.get("command", "")
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    allowed_checks = {"disk": ["df", "-h"], "uptime": ["uptime"]}
+    check = request.json.get("check", "")
+    if check not in allowed_checks:
+        return jsonify({"error": "Invalid check"}), 400
+    result = subprocess.run(allowed_checks[check], capture_output=True, text=True)
     return jsonify({"output": result.stdout})
 
 
