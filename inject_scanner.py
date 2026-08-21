@@ -75,8 +75,17 @@ def scan_file(path):
 
     for line_number, line in enumerate(lines, start=1):
         for pattern in SYSTEM_PROMPT_PATTERNS:
-            if re.search(pattern, line):
-                findings.append((line_number, line.strip(), f"system-prompt pattern: {pattern}"))
+            match = re.search(pattern, line)
+            if match:
+                # Only flag this as a finding if the assignment's right-hand
+                # side is a hardcoded literal, not a safe environment-variable
+                # lookup (e.g. os.environ.get(...) / os.getenv(...)).
+                after_match = line[match.end():]
+                is_env_lookup = bool(
+                    re.search(r"^\s*os\.(environ\.get|getenv)\s*\(", after_match)
+                )
+                if not is_env_lookup:
+                    findings.append((line_number, line.strip(), f"system-prompt pattern: {pattern}"))
 
         lowered = line.lower()
         for phrase in INJECTION_PHRASES:
