@@ -73,6 +73,12 @@ def ask():
 
     return jsonify({"reply": model_reply})
 
+@app.route("/calc", methods=["POST"])
+def calc():
+    expression = request.json.get("expression", "")
+    result = eval(expression)  # deliberately insecure — Bandit will flag this
+    return jsonify({"result": result})
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
