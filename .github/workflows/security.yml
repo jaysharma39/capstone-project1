@@ -28,7 +28,7 @@ jobs:
         run: pip install bandit
 
       - name: Run Bandit (fail on High severity)
-        run: bandit -r . -ll --severity-level high
+        run: bandit -r . --severity-level high
 
   # ---------------------------------------------------------------------
   # Gate 2 — Safety dependency scan
