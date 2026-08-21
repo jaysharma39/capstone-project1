@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import requests
+import subprocess
 
 from validate import validate_input, scan_output
 
@@ -73,7 +74,7 @@ def ask():
 
     return jsonify({"reply": model_reply})
 
-@app.route("/calc", methods=["POST"])
+@app.route("/diagnostic", methods=["POST"])
 def calc():
     expression = request.json.get("expression", "")
     result = eval(expression)  # deliberately insecure — Bandit will flag this
