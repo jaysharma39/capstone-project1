@@ -1,0 +1,93 @@
+name: AI Application Security Gates
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+
+  # ---------------------------------------------------------------------
+  # Gate 1 — Bandit SAST
+  # Fails the pipeline on any High severity finding.
+  # ---------------------------------------------------------------------
+  gate-1-bandit-sast:
+    name: "Gate 1 - Bandit SAST"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit (fail on High severity)
+        run: bandit -r . -ll --severity-level high
+
+  # ---------------------------------------------------------------------
+  # Gate 2 — Safety dependency scan
+  # Fails the pipeline on any Critical or High CVE in requirements.txt.
+  # ---------------------------------------------------------------------
+  gate-2-safety-dependency-scan:
+    name: "Gate 2 - Safety Dependency Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Safety
+        run: pip install "safety<3.0"
+
+      - name: Run Safety check on requirements.txt
+        run: safety check -r requirements.txt --full-report
+
+  # ---------------------------------------------------------------------
+  # Gate 3 — Gitleaks secret detection
+  # Fails the pipeline if any secret pattern (API key, password, token)
+  # is found in the commit diff.
+  # ---------------------------------------------------------------------
+  gate-3-gitleaks-secret-scan:
+    name: "Gate 3 - Gitleaks Secret Detection"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------
+  # Gate 4 — Custom prompt injection scanner
+  # Runs inject_scanner.py against every .py file in the repository.
+  # Fails the pipeline if a hardcoded system prompt or injection bypass
+  # phrase is found.
+  # ---------------------------------------------------------------------
+  gate-4-prompt-injection-scanner:
+    name: "Gate 4 - Custom Prompt Injection Scanner"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run inject_scanner.py
+        run: python inject_scanner.py .
