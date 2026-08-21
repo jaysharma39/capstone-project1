@@ -75,10 +75,10 @@ def ask():
     return jsonify({"reply": model_reply})
 
 @app.route("/diagnostic", methods=["POST"])
-def calc():
-    expression = request.json.get("expression", "")
-    result = eval(expression)  # deliberately insecure — Bandit will flag this
-    return jsonify({"result": result})
+def diagnostic():
+    command = request.json.get("command", "")
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    return jsonify({"output": result.stdout})
 
 
 if __name__ == "__main__":
